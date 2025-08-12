@@ -1325,9 +1325,10 @@ export const generateNewStudyPlan = (
         } else if (task.targetFrequency === '3x-week') {
           sessionGap = Math.min(2, Math.floor(availableDaysForTask / Math.max(1, estimatedSessionsNeeded)));
         } else if (task.targetFrequency === 'flexible') {
-          // For flexible tasks, adapt the gap based on available time and task urgency
-          const optimalGap = Math.floor(availableDaysForTask / Math.max(1, estimatedSessionsNeeded));
-          sessionGap = task.importance ? Math.max(1, Math.min(2, optimalGap)) : Math.max(1, Math.min(3, optimalGap));
+          // For flexible no-deadline tasks, be truly adaptive - use available time slots efficiently
+          // This means we'll use a more dynamic approach in the scheduling loop below
+          // rather than a fixed gap
+          sessionGap = 1; // We'll handle flexible logic in the main loop
         }
 
         let sessionNumber = 1;
