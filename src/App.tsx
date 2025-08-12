@@ -136,6 +136,96 @@ function App() {
     // Dark mode state
     const [darkMode, setDarkMode] = useState(false);
 
+    // Load data from localStorage after component mounts
+    useEffect(() => {
+        try {
+            // Load tasks
+            const savedTasks = localStorage.getItem('timepilot-tasks');
+            if (savedTasks) {
+                const parsed = JSON.parse(savedTasks);
+                if (Array.isArray(parsed)) {
+                    setTasks(parsed);
+                }
+            }
+
+            // Load study plans
+            const savedStudyPlans = localStorage.getItem('timepilot-studyPlans');
+            if (savedStudyPlans) {
+                const parsed = JSON.parse(savedStudyPlans);
+                if (Array.isArray(parsed)) {
+                    setStudyPlans(parsed);
+                }
+            }
+
+            // Load fixed commitments
+            const savedCommitments = localStorage.getItem('timepilot-commitments');
+            if (savedCommitments) {
+                const parsed = JSON.parse(savedCommitments);
+                if (Array.isArray(parsed)) {
+                    // Migrate existing commitments to include recurring field
+                    const migratedCommitments = parsed.map((commitment: any) => {
+                        if (commitment.recurring === undefined) {
+                            return {
+                                ...commitment,
+                                recurring: true,
+                                specificDates: commitment.specificDates || []
+                            };
+                        }
+                        return commitment;
+                    });
+                    setFixedCommitments(migratedCommitments);
+                }
+            }
+
+            // Load settings
+            const savedSettings = localStorage.getItem('timepilot-settings');
+            if (savedSettings) {
+                const parsed = JSON.parse(savedSettings);
+                if (parsed && typeof parsed === 'object') {
+                    const defaultSettings = {
+                        dailyAvailableHours: 6,
+                        workDays: [0, 1, 2, 3, 4, 5, 6],
+                        bufferDays: 0,
+                        minSessionLength: 15,
+                        bufferTimeBetweenSessions: 0,
+                        studyWindowStartHour: 6,
+                        studyWindowEndHour: 23,
+                        shortBreakDuration: 5,
+                        longBreakDuration: 15,
+                        maxConsecutiveHours: 4,
+                        avoidTimeRanges: [],
+                        weekendStudyHours: 4,
+                        autoCompleteSessions: false,
+                        enableNotifications: true,
+                        userPrefersPressure: false,
+                        studyPlanMode: 'even',
+                        dateSpecificStudyWindows: []
+                    };
+                    setSettings({ ...defaultSettings, ...parsed });
+                }
+            }
+
+            // Load gamification data
+            const savedGamification = localStorage.getItem('timepilot-gamification');
+            if (savedGamification) {
+                const parsed = JSON.parse(savedGamification);
+                setGamificationData(parsed);
+            }
+
+            // Load dark mode
+            const savedDarkMode = localStorage.getItem('timepilot-darkmode');
+            if (savedDarkMode) {
+                const parsed = JSON.parse(savedDarkMode);
+                setDarkMode(parsed);
+            }
+
+            setHasLoadedFromStorage(true);
+        } catch (error) {
+            console.error('Error loading data from localStorage:', error);
+            setHasLoadedFromStorage(true);
+        }
+    }, []);
+
     // Persist gamification data
     useEffect(() => {
         localStorage.setItem('timepilot-gamification', JSON.stringify(gamificationData));
