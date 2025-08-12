@@ -1107,11 +1107,14 @@ export const generateNewStudyPlan = (
         }
       } else {
         // Regular task scheduling (can be split)
-        for (let i = 0; i < sessionLengths.length && i < daysForTask.length; i++) {
-          const date = daysForTask[i];
+        // For frequency preferences, distribute sessions across the timeline respecting gaps
+        let sessionIndex = 0;
+
+        for (let dayIndex = 0; dayIndex < daysForTask.length && sessionIndex < sessionLengths.length; dayIndex++) {
+          const date = daysForTask[dayIndex];
           let dayPlan = studyPlans.find(p => p.date === date)!;
           let availableHours = dailyRemainingHours[date];
-          const thisSessionLength = Math.min(sessionLengths[i], availableHours);
+          const thisSessionLength = Math.min(sessionLengths[sessionIndex], availableHours);
 
           if (thisSessionLength > 0) {
             const roundedSessionLength = Math.round(thisSessionLength * 60) / 60;
@@ -1128,10 +1131,22 @@ export const generateNewStudyPlan = (
             dayPlan.totalStudyHours = Math.round((dayPlan.totalStudyHours + roundedSessionLength) * 60) / 60;
             dailyRemainingHours[date] = Math.round((dailyRemainingHours[date] - roundedSessionLength) * 60) / 60;
             totalHours = Math.round((totalHours - roundedSessionLength) * 60) / 60;
+            sessionIndex++; // Move to next session only after successfully scheduling
           } else {
-            // Track unscheduled hours for redistribution
-            unscheduledHours += sessionLengths[i];
+            // If we can't fit the session on this day, track unscheduled hours
+            // but don't increment sessionIndex - try this session on the next available day
+            if (dayIndex === daysForTask.length - 1) {
+              // If this is the last day and we still can't fit, mark as unscheduled
+              unscheduledHours += sessionLengths[sessionIndex];
+              sessionIndex++;
+            }
           }
+        }
+
+        // If we have remaining sessions that couldn't be scheduled, mark them as unscheduled
+        while (sessionIndex < sessionLengths.length) {
+          unscheduledHours += sessionLengths[sessionIndex];
+          sessionIndex++;
         }
       }
       
