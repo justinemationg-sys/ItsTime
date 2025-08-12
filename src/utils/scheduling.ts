@@ -1415,7 +1415,19 @@ export const generateNewStudyPlan = (
               }
 
               // Apply session gap for next scheduling
-              dayIndex += sessionGap;
+              // For flexible tasks, be more adaptive about gaps
+              if (task.targetFrequency === 'flexible') {
+                // For flexible tasks, skip ahead based on recent success/failure
+                if (sessionHours >= task.maxSessionLength || sessionHours >= remainingHours * 0.5) {
+                  // Had a good session, can wait a bit longer
+                  dayIndex += task.importance ? 2 : 3;
+                } else {
+                  // Small session, try again sooner
+                  dayIndex += 1;
+                }
+              } else {
+                dayIndex += sessionGap;
+              }
             } else {
               dayIndex++;
             }
