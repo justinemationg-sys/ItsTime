@@ -1362,6 +1362,14 @@ export const generateNewStudyPlan = (
             maxSessionHours = Math.min(maxSessionHours * 2, remainingHours); // Longer sessions for weekly tasks
           } else if (task.targetFrequency === 'daily') {
             maxSessionHours = Math.min(maxSessionHours * 0.75, remainingHours); // Shorter sessions for daily tasks
+          } else if (task.targetFrequency === 'flexible') {
+            // For flexible tasks, adapt session length based on available time
+            // Take advantage of larger time blocks when available
+            if (availableHours >= maxSessionHours * 1.5) {
+              maxSessionHours = Math.min(maxSessionHours * 1.5, remainingHours); // Longer sessions when lots of time available
+            } else if (availableHours <= maxSessionHours * 0.5) {
+              maxSessionHours = Math.min(availableHours, remainingHours); // Use what's available
+            }
           }
 
           const sessionHours = Math.min(
