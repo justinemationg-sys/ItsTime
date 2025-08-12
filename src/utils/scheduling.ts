@@ -995,6 +995,7 @@ export const generateNewStudyPlan = (
             }
 
             daysForTask = frequencyFilteredDays;
+            console.log(`Applied 3x-week frequency for task "${task.title}": ${daysForTask.length} days selected from ${availableDays.filter(d => d >= startDateStr && d <= deadlineDateStr).length} available days`);
           } else if (task.targetFrequency === 'flexible') {
             // Enhanced flexible scheduling: truly adaptive based on available time and task characteristics
             // This frequency should take advantage of any available gaps in the schedule
