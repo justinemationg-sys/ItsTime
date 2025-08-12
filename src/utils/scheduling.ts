@@ -989,13 +989,56 @@ export const generateNewStudyPlan = (
             selectedDays.sort();
             daysForTask = selectedDays;
           } else if (task.targetFrequency === 'flexible') {
-            // For flexible tasks, adapt the gap based on available time and task urgency
-            sessionGap = task.importance ? 2 : 3; // More frequent for important tasks
-            const frequencyFilteredDays: string[] = [];
-            for (let i = 0; i < daysForTask.length; i += sessionGap) {
-              frequencyFilteredDays.push(daysForTask[i]);
+            // Enhanced flexible scheduling: truly adaptive based on available time and task characteristics
+            // This frequency should take advantage of any available gaps in the schedule
+
+            // Calculate available hours for each day
+            const daysWithAvailability = daysForTask.map(date => {
+              let availableTimeOnDay = dailyRemainingHours[date] || settings.dailyAvailableHours;
+              return {
+                date,
+                availableTime: availableTimeOnDay
+              };
+            });
+
+            // Sort by available time (descending) to prioritize days with most availability
+            daysWithAvailability.sort((a, b) => b.availableTime - a.availableTime);
+
+            // Calculate optimal sessions based on task characteristics
+            const estimatedSessions = Math.ceil(task.estimatedHours / Math.min(2, settings.dailyAvailableHours));
+
+            // For flexible tasks, be more adaptive:
+            // - Important tasks: aim for more frequent sessions (every 1-2 days when time available)
+            // - Regular tasks: spread out more but still opportunistic (every 2-4 days when time available)
+            const minSessionLength = (settings.minSessionLength || 15) / 60;
+
+            let targetSessionCount;
+            if (task.importance) {
+              // Important flexible tasks: schedule more frequently when time is available
+              targetSessionCount = Math.min(
+                estimatedSessions,
+                daysWithAvailability.filter(day => day.availableTime >= minSessionLength).length
+              );
+            } else {
+              // Regular flexible tasks: more spread out, but still opportunistic
+              const availableDaysWithTime = daysWithAvailability.filter(day => day.availableTime >= minSessionLength);
+              targetSessionCount = Math.min(
+                estimatedSessions,
+                Math.ceil(availableDaysWithTime.length * 0.6) // Use about 60% of available days
+              );
             }
-            daysForTask = frequencyFilteredDays;
+
+            // Select the best days (most available time) up to our target
+            const selectedDays: string[] = [];
+            for (let i = 0; i < Math.min(targetSessionCount, daysWithAvailability.length); i++) {
+              if (daysWithAvailability[i].availableTime >= minSessionLength) {
+                selectedDays.push(daysWithAvailability[i].date);
+              }
+            }
+
+            // Sort chronologically
+            selectedDays.sort();
+            daysForTask = selectedDays;
           }
           // daily frequency uses sessionGap = 1 (no filtering needed)
         }
